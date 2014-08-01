@@ -1,0 +1,129 @@
+#include"role.h"
+#include<string.h>
+#include"../../Facade.h"
+#include"../../core/NetMsg.h"
+#include"roleCtr.h"
+
+
+/*------------role_info-----------*/
+IMPLEMENT_OBJ_POOL(role_info)
+role_info::role_info (const uint_32 & 	_id,
+		int_8*			_name,
+		const int_32 &		_hp) {
+
+	uint_32		_name_size = 0;
+
+	m_id = _id;
+	m_hp = _hp;
+
+	//deal with name	
+	_name_size = strlen(_name);
+	if(NULL == m_name) {
+		m_name = new int_8[_name_size];
+	}else{
+		if(strlen(m_name) < _name_size) {
+			delete m_name;
+			m_name = new int_8[_name_size];
+		}
+	}
+	strcpy(m_name , _name);
+	//end deal with name
+}
+
+role_info::~role_info() {
+}
+
+/*-----------heart_beater--------*/
+heart_beater::heart_beater() {
+	m_cur_time = 0;
+}
+heart_beater::~heart_beater() {
+}
+static void helper_heart_beat(void * _p) {
+	(static_cast<heart_beater *>(_p))->check();
+}
+void heart_beater::run() {
+	Facade::get_instance()->add_timer(1000 , helper_heart_beat , this);
+}
+
+void heart_beater::stop() {
+	Facade::get_instance()->remove_timer(helper_heart_beat);
+}
+
+void heart_beater::beat(int_32	_fd) {
+//  verify the server obj beat
+	if(m_cur_time > 0) {
+		--m_cur_time; 
+	}
+//send the beat msg to roleCtr
+	roleCtr::get_instance()->beat_to_client(_fd);
+}
+bool heart_beater::check() {
+	if(m_cur_time < HEART_BEAT_LIMIT) {
+		++m_cur_time;
+		return true;
+	}
+	return false;
+}
+/*-----------role--------*/
+IMPLEMENT_OBJ_POOL(role)
+
+role::role (int_32		_fd ,
+	int_8 *		_account){
+
+	MYSQL_RES*	_res = NULL;
+	MYSQL_ROW 	_row;
+
+	if(NULL == m_sql) {
+		m_sql = new int_8[MAX_SQL_LENGTH];
+	}
+	DEBUG_SHOW("BEFORE make sql \n")
+	printf("THE  CCOUNT IS %s\n" , _account);
+	snprintf(m_sql , MAX_SQL_LENGTH , 
+		"SELECT * FROM role_info WHERE r_account = '%s'",
+		 _account);
+	DEBUG_SHOW("AFTER make sql ")
+	//get role info data from db
+	DEBUG_SHOW("BEFORE execute sql ")
+	_res = Facade::get_instance()->execute_get(m_sql);
+	DEBUG_SHOW("IN ROLE creation ")
+	if(_res == NULL)  {
+	DEBUG_SHOW("gonna to get out ")
+		return;
+	}
+	_row = mysql_fetch_row(_res);
+	m_role_info = new role_info(atoi(_row[HEAD_ROLE_ID]) , 
+					_row[HEAD_ROLE_NAME] ,
+					atoi(_row[HEAD_ROLE_HP]));
+	//create heart beater
+	m_hbeater.run();
+}
+role::~role() {
+	delete m_role_info;
+	m_hbeater.stop();
+}
+
+void role::write_back_data() {
+	bool		_result = false;
+
+	if(NULL == m_sql) {
+		m_sql = new int_8[MAX_SQL_LENGTH];
+	}
+	snprintf(m_sql , MAX_SQL_LENGTH , 
+	"UPDATE role_info SET r_hp = %d WHERE r_id = %d" , 
+							m_role_info->m_hp , 
+							m_role_info->m_id);
+
+	_result = Facade::get_instance()->execute_set(m_sql);
+	if(!_result) {
+		//log the failure
+	}
+}
+
+void 	role::heart_beat() {
+	m_hbeater.beat(m_fd);
+}
+
+int_32	role::get_fd() {
+	return m_fd;
+}

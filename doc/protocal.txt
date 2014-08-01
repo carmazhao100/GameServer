@@ -1,0 +1,19 @@
+/+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Title:the protocal of our game!
+ _________ ___   ___
+/_____  /  \ \  / /
+     / /_   \ \/ /
+    / /      \  /___
+   / /_      / /\ \
+  / /_____  / /  \ \
+ /______/  /_/__  \_\__ CARMAZHAO
+Date:	2011/12/26
+++++++++++++++++++++++++++++++++++++++++++++++++++++++/
+HEART_BEAT:	100001
+para:		none
+des: 		The msg is used to keep player online if timeout then
+		the player is in logout state ,we delete the connection
+
+
+
+

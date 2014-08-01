@@ -1,0 +1,26 @@
+CC = g++
+INCLUDE = .
+CFLAGS = -g -Wall -ansi
+MSGLIB = msglib.a
+
+all:rma $(MSGLIB)
+$(MSGLIB):$(MSGLIB)(command.o) $(MSGLIB)(proxyMsg.o) $(MSGLIB)(msgCenter.o) $(MSGLIB)(proxyCenter.o) $(MSGLIB)(msgIdCtr.o) $(MSGLIB)(msgConst.o)
+
+proxyCenter.o:proxyCenter.cpp Iproxy.h debug.h typeDef.h proxyCenter.h
+	$(CC) -I$(INCLUDE) $(CFLAGS) -c proxyCenter.cpp
+proxyMsg.o:proxyMsg.cpp proxyMsg.h typeDef.h debug.h
+	$(CC) -I$(INCLUDE) $(CFLAGS) -c proxyMsg.cpp
+command.o:command.cpp command.h typeDef.h
+	$(CC) -I$(INCLUDE) $(CFLAGS) -c command.cpp
+msgCenter.o:msgCenter.cpp msgCenter.h command.h Imediator.h typeDef.h
+	$(CC) -I$(INCLUDE) $(CFLAGS) -c msgCenter.cpp
+msgIdCtr.o:msgIdCtr.cpp msgIdCtr.h typeDef.h
+	$(CC) -I$(INCLUDE) $(CFLAGS) -c msgIdCtr.cpp
+msgConst.o:msgConst.h msgConst.cpp typeDef.h msgIdCtr.h
+	$(CC) -I$(INCLUDE) $(CFLAGS) -c msgConst.cpp
+	
+rma:
+	-rm *.a
+	
+cleanAll:
+	-rm  *.o *.a
